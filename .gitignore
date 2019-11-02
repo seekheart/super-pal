@@ -24,6 +24,8 @@ hs_err_pid*
 
 # IDE stuff
 .idea
+.gradle
+build
 
 #secrets
 secrets.json
