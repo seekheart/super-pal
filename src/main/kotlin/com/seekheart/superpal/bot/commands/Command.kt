@@ -3,9 +3,9 @@ package com.seekheart.superpal.bot.commands
 import com.seekheart.superpal.models.DiscordMessageEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-abstract class BaseCommand {
+abstract class Command {
     abstract val usages: Array<String>
-    abstract fun run(event: MessageReceivedEvent): Boolean
+    abstract fun execute(event: MessageReceivedEvent, commandArgs: List<String>): Boolean
 
     fun getDiscordMessageInfo(event: MessageReceivedEvent): DiscordMessageEvent {
         return DiscordMessageEvent(
