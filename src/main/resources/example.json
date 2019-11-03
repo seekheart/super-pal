@@ -1,0 +1,9 @@
+{
+  "bot": {
+    "clientSecret": "FILL IN",
+    "clientId": "FILL IN",
+    "token": "FILL IN.Xb29qw.sUDTEtmi6XbPqclG8X-i7gk3iHA",
+    "permissionId": 123,
+    "commandPrefix": "FILL IN"
+  }
+}
