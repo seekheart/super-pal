@@ -40,7 +40,6 @@ class PlayerCommand : Command() {
     }
 
     override fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean {
-        log.info("Message = ${commandArgs}")
         val noActionErrorMsg = "Sorry you need to tell me what you wanna do about players >.<"
 
         if (commandArgs.isEmpty()) {
@@ -53,6 +52,7 @@ class PlayerCommand : Command() {
             "friends" -> handleFriends(event)
             "register" -> handleRegister(event)
             "add-team" -> handleAddTeam(event, commandArgs)
+            "my-teams" -> handleMyTeams(event)
         }
         return true
     }
@@ -77,12 +77,16 @@ class PlayerCommand : Command() {
         try {
             log.info("Saving player=${event.author} with id=${event.author.id}")
             savedPlayer = superPalApi.createPlayer(playerToRegister)
-        } catch (e: Exception) {
+        } catch (e: FeignException) {
             log.error(e.message)
-            super.sendChannelMessage(
-                event,
-                "Something went wrong and I couldn't register you sorry ${event.author.name}!"
-            )
+            if (e.status() == 409) {
+                super.sendChannelMessage(event, "${event.author.asMention} you already registered!")
+            } else {
+                super.sendChannelMessage(
+                    event,
+                    "Something went wrong and I couldn't register you sorry ${event.author.name}!"
+                )
+            }
             return false
         }
 
@@ -115,15 +119,20 @@ class PlayerCommand : Command() {
             name = event.author.name,
             teams = teams
         )
-        log.info("Adding teams to player id=$playerId teams = $teams")
+        val displayMsgTeamName = teams[0]
+
+        log.info("Adding team to player id=$playerId team=$displayMsgTeamName")
         try {
             superPalApi.addTeam(playerId, request)
-            super.sendChannelMessage(event, "Cool I has added ${teams} to your list of known teams")
+            super.sendChannelMessage(event, "Cool I has added $displayMsgTeamName to your list of known teams")
         } catch (e: FeignException) {
             log.error("Could not save teams=$teams for player=${event.author.name}")
             log.error(e.message)
             if (e.status() == 400) {
-                super.sendChannelMessage(event, "You already has team $teams registered ${event.author.asMention}")
+                super.sendChannelMessage(
+                    event,
+                    "You already has team $displayMsgTeamName registered ${event.author.asMention}"
+                )
             } else {
                 super.sendChannelMessage(event, "Server Errored >.< try again later")
             }
@@ -133,4 +142,30 @@ class PlayerCommand : Command() {
         return true
     }
 
+    private fun handleMyTeams(event: MessageReceivedEvent): Boolean {
+        val playerName = event.author.name
+        val playerId = playersLookup[playerName]
+
+        if (playerId == null) {
+            log.warn("Player=$playerName has no teams registered")
+            super.sendChannelMessage(event, "${event.author.asMention} has no teams registered!")
+        }
+
+        lateinit var response: PlayerResponse
+        try {
+            response = superPalApi.findPlayer(playerId!!)
+        } catch (e: FeignException) {
+            log.error(e.message)
+            when(e.status()) {
+                404 -> super.sendChannelMessage(event, "${event.author.asMention} you aren't registered!")
+                else -> super.sendChannelMessage(event, "An error occurred and I'm derping (o.O)")
+            }
+            return false
+        }
+
+        log.info("Successfully retrieved response=$response")
+        val teams = response.teams.joinToString(", ")
+        super.sendChannelMessage(event, "${event.author.asMention} your teams are: $teams")
+        return true
+    }
 }

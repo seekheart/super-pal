@@ -2,6 +2,7 @@ package com.seekheart.superpal.bot.eventHandlers
 
 import com.seekheart.superpal.bot.commands.Command
 import com.seekheart.superpal.bot.commands.PlayerCommand
+import com.seekheart.superpal.bot.commands.TeamCommand
 import com.seekheart.superpal.config.BotConfig
 import com.uchuhimo.konf.Config
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -11,8 +12,9 @@ import org.slf4j.LoggerFactory
 class MessageHandler : ListenerAdapter() {
     private val log = LoggerFactory.getLogger(MessageHandler::class.java)
     private var prefix: String
-    private val commands = mapOf<String, Command>(
-        "player" to PlayerCommand()
+    private val commands = mapOf(
+        "player" to PlayerCommand(),
+        "team" to TeamCommand()
     )
 
     init {
