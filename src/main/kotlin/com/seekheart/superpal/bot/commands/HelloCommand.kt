@@ -7,7 +7,7 @@ class HelloCommand: Command() {
     private val log = LoggerFactory.getLogger(HelloCommand::class.java)
     override val usages: Array<String> = arrayOf("Greets Caller")
 
-    override fun execute(event: MessageReceivedEvent, commandArgs: List<String>): Boolean {
+    override fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean {
         val discordMsgData = super.getDiscordMessageInfo(event)
 
         if (commandArgs.isNotEmpty() && commandArgs.size > 1) {

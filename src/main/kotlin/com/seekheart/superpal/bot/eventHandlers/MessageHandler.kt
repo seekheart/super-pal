@@ -2,6 +2,7 @@ package com.seekheart.superpal.bot.eventHandlers
 
 import com.seekheart.superpal.bot.commands.Command
 import com.seekheart.superpal.bot.commands.HelloCommand
+import com.seekheart.superpal.bot.commands.PlayerCommand
 import com.seekheart.superpal.config.BotConfig
 import com.uchuhimo.konf.Config
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -12,7 +13,8 @@ class MessageHandler : ListenerAdapter() {
     private val log = LoggerFactory.getLogger(MessageHandler::class.java)
     private var prefix: String
     private val commands = mapOf<String, Command>(
-        "hi" to HelloCommand()
+        "hi" to HelloCommand(),
+        "player" to PlayerCommand()
     )
 
     init {
@@ -28,7 +30,7 @@ class MessageHandler : ListenerAdapter() {
             log.warn("Ignoring message because user - ${event.author.name} is a bot")
             return
         }
-        val userMsg: List<String> = parseCommand(event.message.contentDisplay)
+        val userMsg: MutableList<String> = parseCommand(event.message.contentDisplay)
 
         if (userMsg.isEmpty()) {
             return
@@ -47,15 +49,15 @@ class MessageHandler : ListenerAdapter() {
         log.info("Command - $cmd has result isSuccess - $result")
     }
 
-    private fun parseCommand(userMsg: String): List<String> {
+    private fun parseCommand(userMsg: String): MutableList<String> {
         var msg = ""
         if (userMsg.startsWith(prefix)) {
             msg = userMsg.removePrefix(prefix).trim()
         } else {
-            return emptyList()
+            return emptyList<String>().toMutableList()
         }
 
-        return msg.split("\\s".toRegex())
+        return msg.split("\\s".toRegex()).toMutableList()
     }
 
 

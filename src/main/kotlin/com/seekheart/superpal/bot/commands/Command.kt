@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 abstract class Command {
     abstract val usages: Array<String>
-    abstract fun execute(event: MessageReceivedEvent, commandArgs: List<String>): Boolean
+    abstract fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean
 
     fun getDiscordMessageInfo(event: MessageReceivedEvent): DiscordMessageEvent {
         return DiscordMessageEvent(
