@@ -1,17 +1,12 @@
 package com.seekheart.superpal.bot.commands
 
-import com.seekheart.superpal.models.DiscordMessageEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 abstract class Command {
-    abstract val usages: Array<String>
+    abstract val usages: MutableList<String>
     abstract fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean
 
-    fun getDiscordMessageInfo(event: MessageReceivedEvent): DiscordMessageEvent {
-        return DiscordMessageEvent(
-            jda = event.jda,
-            user = event.author,
-            channel = event.channel
-        )
+    fun sendChannelMessage(event: MessageReceivedEvent, botMessage: String) {
+        event.channel.sendMessage(botMessage).queue()
     }
 }

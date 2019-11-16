@@ -1,7 +1,6 @@
 package com.seekheart.superpal.bot.eventHandlers
 
 import com.seekheart.superpal.bot.commands.Command
-import com.seekheart.superpal.bot.commands.HelloCommand
 import com.seekheart.superpal.bot.commands.PlayerCommand
 import com.seekheart.superpal.config.BotConfig
 import com.uchuhimo.konf.Config
@@ -13,7 +12,6 @@ class MessageHandler : ListenerAdapter() {
     private val log = LoggerFactory.getLogger(MessageHandler::class.java)
     private var prefix: String
     private val commands = mapOf<String, Command>(
-        "hi" to HelloCommand(),
         "player" to PlayerCommand()
     )
 
@@ -27,17 +25,16 @@ class MessageHandler : ListenerAdapter() {
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
         if (event.author.isBot) {
-            log.warn("Ignoring message because user - ${event.author.name} is a bot")
+            log.warn("Ignoring message because user=${event.author.name} is a bot")
             return
         }
         val userMsg: MutableList<String> = parseCommand(event.message.contentDisplay)
-
         if (userMsg.isEmpty()) {
             return
         }
 
-        val cmd = userMsg[0].trim().toLowerCase()
-        log.info("Processing command - $cmd")
+        val cmd = userMsg.removeAt(0)
+        log.info("Processing command=$cmd")
 
         val command = commands[cmd]
         var result = false
@@ -46,7 +43,7 @@ class MessageHandler : ListenerAdapter() {
             result = command.execute(event, userMsg)
         }
 
-        log.info("Command - $cmd has result isSuccess - $result")
+        log.info("Command=$cmd has result isSuccess=$result")
     }
 
     private fun parseCommand(userMsg: String): MutableList<String> {
