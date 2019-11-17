@@ -17,7 +17,6 @@ import java.util.*
 
 class TeamCommand : Command() {
     private val log = LoggerFactory.getLogger(TeamCommand::class.java)
-    override val usages: MutableList<String> = mutableListOf("manage teams")
     private var superPalApi: SuperPalApi
     private val secrets = Config { addSpec(BotConfig) }
         .from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)

@@ -18,7 +18,6 @@ import kotlin.streams.toList
 
 class PlayerCommand : Command() {
     private val log = LoggerFactory.getLogger(PlayerCommand::class.java)
-    override val usages: MutableList<String> = mutableListOf("manages players")
     private var superPalApi: SuperPalApi
     private val secrets = Config { addSpec(BotConfig) }
         .from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
