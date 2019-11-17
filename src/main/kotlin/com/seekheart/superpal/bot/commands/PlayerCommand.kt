@@ -52,6 +52,7 @@ class PlayerCommand : Command() {
             "friends" -> handleFriends(event)
             "register" -> handleRegister(event)
             "add-team" -> handleAddTeam(event, commandArgs)
+            "delete-team" -> handleDeleteTeam(event, commandArgs)
             "my-teams" -> handleMyTeams(event)
         }
         return true
@@ -108,30 +109,30 @@ class PlayerCommand : Command() {
             return false
         }
         val playerId = playersLookup[event.author.name]
+        val team = teams.removeAt(0)
 
         if (playerId == null) {
             log.error("no player id found!")
-            event.channel.sendMessage("Something bad happened and I couldn't add team >.<").queue()
+            super.sendChannelMessage(event, "I don't know you ${event.author.asMention}")
             return false
         }
         val request = PlayerRequest(
             discordId = event.author.id,
             name = event.author.name,
-            teams = teams
+            team = team
         )
-        val displayMsgTeamName = teams[0]
 
-        log.info("Adding team to player id=$playerId team=$displayMsgTeamName")
+        log.info("Adding team to player id=$playerId team=$team")
         try {
-            superPalApi.addTeam(playerId, request)
-            super.sendChannelMessage(event, "Cool I has added $displayMsgTeamName to your list of known teams")
+            superPalApi.addTeamToPlayer(playerId, request)
+            super.sendChannelMessage(event, "Cool I has added $team to your list of known teams")
         } catch (e: FeignException) {
             log.error("Could not save teams=$teams for player=${event.author.name}")
             log.error(e.message)
             if (e.status() == 400) {
                 super.sendChannelMessage(
                     event,
-                    "You already has team $displayMsgTeamName registered ${event.author.asMention}"
+                    "You already has team $team registered ${event.author.asMention}"
                 )
             } else {
                 super.sendChannelMessage(event, "Server Errored >.< try again later")
@@ -139,6 +140,45 @@ class PlayerCommand : Command() {
 
             return false
         }
+        return true
+    }
+
+    private fun handleDeleteTeam(event: MessageReceivedEvent, teams: MutableList<String>): Boolean {
+        if (teams.isEmpty()) {
+            log.error("User=${event.author.name} tried deleting nothing")
+            super.sendChannelMessage(event, "${event.author.asMention} I can't delete nothing!")
+            return false
+        } else if (teams.size > 1) {
+            log.error("Player=${event.author.name} tried to delete more than 1 team")
+            super.sendChannelMessage(event, "BAKA! ${event.author.asMention} I can only delete 1 team at a time!")
+            return false
+        }
+
+        val playerId = playersLookup[event.author.name]
+        val team = teams.removeAt(0)
+
+        if (playerId == null) {
+            log.error("no player id found for player={}", event.author.name)
+            super.sendChannelMessage(event, "I don't know you ${event.author.asMention}")
+        }
+
+        val request = PlayerRequest(discordId=event.author.id, name=event.author.name, team=team)
+        log.info("Deleting team=$team from player id=$playerId")
+        try {
+            superPalApi.deleteTeamFromPlayer(playerId!!, request)
+            super.sendChannelMessage(event, "I has deleted $team from your register ${event.author.asMention}")
+        } catch (e: FeignException) {
+            log.error(e.message)
+            when(e.status()) {
+                404 -> super.sendChannelMessage(event, "${event.author.asMention} I can't delete a team I don't know about")
+                500 -> super.sendChannelMessage(event, "${event.author.asMention} the api derped on me >.< try again later")
+                else -> super.sendChannelMessage(event, "${event.author.asMention} get my creator! I don't know what's wrong")
+            }
+            return false
+        }
+
+        log.info("Successfully deleted team=$team from player id=$playerId")
+
         return true
     }
 
@@ -165,7 +205,11 @@ class PlayerCommand : Command() {
 
         log.info("Successfully retrieved response=$response")
         val teams = response.teams.joinToString(", ")
-        super.sendChannelMessage(event, "${event.author.asMention} your teams are: $teams")
+        if (teams.isNotEmpty()) {
+            super.sendChannelMessage(event, "${event.author.asMention} your teams are: $teams")
+        } else {
+            super.sendChannelMessage(event, "${event.author.asMention} you has no teams registered")
+        }
         return true
     }
 }

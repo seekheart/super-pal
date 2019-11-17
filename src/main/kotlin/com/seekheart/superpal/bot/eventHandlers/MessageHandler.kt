@@ -1,6 +1,5 @@
 package com.seekheart.superpal.bot.eventHandlers
 
-import com.seekheart.superpal.bot.commands.Command
 import com.seekheart.superpal.bot.commands.PlayerCommand
 import com.seekheart.superpal.bot.commands.TeamCommand
 import com.seekheart.superpal.config.BotConfig
@@ -23,6 +22,8 @@ class MessageHandler : ListenerAdapter() {
         }.from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
 
         this.prefix = config[BotConfig.commandPrefix]
+
+        log.info("Initializing Message Handler...")
     }
 
     override fun onMessageReceived(event: MessageReceivedEvent) {

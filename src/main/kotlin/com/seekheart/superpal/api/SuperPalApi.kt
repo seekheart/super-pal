@@ -20,8 +20,12 @@ interface SuperPalApi {
     fun findPlayer(@Param("id") playerId: UUID): PlayerResponse
 
     @Headers("Content-Type: application/json")
-    @RequestLine("PUT /players/{id}/teams")
-    fun addTeam(@Param("id") id: UUID, request: PlayerRequest): PlayerResponse
+    @RequestLine("POST /players/{id}/teams")
+    fun addTeamToPlayer(@Param("id") id: UUID, request: PlayerRequest): PlayerResponse
+
+    @Headers("Content-Type: application/json")
+    @RequestLine("DELETE /players/{id}/teams")
+    fun deleteTeamFromPlayer(@Param("id") id: UUID, request: PlayerRequest)
 
     @RequestLine("GET /teams")
     fun findTeams(): List<TeamResponse>
