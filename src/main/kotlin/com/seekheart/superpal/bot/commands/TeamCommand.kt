@@ -2,8 +2,8 @@ package com.seekheart.superpal.bot.commands
 
 import com.seekheart.superpal.api.SuperPalApi
 import com.seekheart.superpal.config.BotConfig
-import com.seekheart.superpal.models.webResponse.PlayerResponse
-import com.seekheart.superpal.models.webResponse.TeamResponse
+import com.seekheart.superpal.models.web.PlayerResponse
+import com.seekheart.superpal.models.web.TeamResponse
 import com.uchuhimo.konf.Config
 import feign.Feign
 import feign.FeignException
@@ -16,6 +16,9 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 class TeamCommand : Command() {
+    override val usage = mutableListOf(
+        "list\t-\tlists all registered teams available for adding/removing from player card"
+    )
     private val log = LoggerFactory.getLogger(TeamCommand::class.java)
     private var superPalApi: SuperPalApi
     private val secrets = Config { addSpec(BotConfig) }

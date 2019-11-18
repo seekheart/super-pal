@@ -2,8 +2,8 @@ package com.seekheart.superpal.bot.commands
 
 import com.seekheart.superpal.api.SuperPalApi
 import com.seekheart.superpal.config.BotConfig
-import com.seekheart.superpal.models.webResponse.PlayerRequest
-import com.seekheart.superpal.models.webResponse.PlayerResponse
+import com.seekheart.superpal.models.web.PlayerRequest
+import com.seekheart.superpal.models.web.PlayerResponse
 import com.uchuhimo.konf.Config
 import feign.Feign
 import feign.FeignException
@@ -17,6 +17,13 @@ import java.util.*
 import kotlin.streams.toList
 
 class PlayerCommand : Command() {
+    override val usage = mutableListOf(
+        "player friends\t-\tshows list of registered players",
+        "player register\t-\tregisters player/makes player card",
+        "player add-team\t-\tadds team to player card",
+        "player delete-team\t-\tremoves team from player card",
+        "player my-team\t-\tshows team registered on player card"
+    )
     private val log = LoggerFactory.getLogger(PlayerCommand::class.java)
     private var superPalApi: SuperPalApi
     private val secrets = Config { addSpec(BotConfig) }
@@ -161,17 +168,26 @@ class PlayerCommand : Command() {
             super.sendChannelMessage(event, "I don't know you ${event.author.asMention}")
         }
 
-        val request = PlayerRequest(discordId=event.author.id, name=event.author.name, team=team)
+        val request = PlayerRequest(discordId = event.author.id, name = event.author.name, team = team)
         log.info("Deleting team=$team from player id=$playerId")
         try {
             superPalApi.deleteTeamFromPlayer(playerId!!, request)
             super.sendChannelMessage(event, "I has deleted $team from your register ${event.author.asMention}")
         } catch (e: FeignException) {
             log.error(e.message)
-            when(e.status()) {
-                404 -> super.sendChannelMessage(event, "${event.author.asMention} I can't delete a team I don't know about")
-                500 -> super.sendChannelMessage(event, "${event.author.asMention} the api derped on me >.< try again later")
-                else -> super.sendChannelMessage(event, "${event.author.asMention} get my creator! I don't know what's wrong")
+            when (e.status()) {
+                404 -> super.sendChannelMessage(
+                    event,
+                    "${event.author.asMention} I can't delete a team I don't know about"
+                )
+                500 -> super.sendChannelMessage(
+                    event,
+                    "${event.author.asMention} the api derped on me >.< try again later"
+                )
+                else -> super.sendChannelMessage(
+                    event,
+                    "${event.author.asMention} get my creator! I don't know what's wrong"
+                )
             }
             return false
         }
@@ -195,7 +211,7 @@ class PlayerCommand : Command() {
             response = superPalApi.findPlayer(playerId!!)
         } catch (e: FeignException) {
             log.error(e.message)
-            when(e.status()) {
+            when (e.status()) {
                 404 -> super.sendChannelMessage(event, "${event.author.asMention} you aren't registered!")
                 else -> super.sendChannelMessage(event, "An error occurred and I'm derping (o.O)")
             }
