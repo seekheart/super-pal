@@ -1,4 +1,4 @@
-package com.seekheart.superpal.models.webResponse
+package com.seekheart.superpal.models.web
 
 data class PlayerRequest(
     val discordId: String,

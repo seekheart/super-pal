@@ -1,8 +1,8 @@
 package com.seekheart.superpal.api
 
-import com.seekheart.superpal.models.webResponse.PlayerRequest
-import com.seekheart.superpal.models.webResponse.PlayerResponse
-import com.seekheart.superpal.models.webResponse.TeamResponse
+import com.seekheart.superpal.models.web.PlayerRequest
+import com.seekheart.superpal.models.web.PlayerResponse
+import com.seekheart.superpal.models.web.TeamResponse
 import feign.Headers
 import feign.Param
 import feign.RequestLine

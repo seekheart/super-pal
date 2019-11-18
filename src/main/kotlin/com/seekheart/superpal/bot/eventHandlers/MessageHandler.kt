@@ -1,5 +1,6 @@
 package com.seekheart.superpal.bot.eventHandlers
 
+import com.seekheart.superpal.bot.commands.HelpCommand
 import com.seekheart.superpal.bot.commands.PlayerCommand
 import com.seekheart.superpal.bot.commands.TeamCommand
 import com.seekheart.superpal.config.BotConfig
@@ -13,7 +14,8 @@ class MessageHandler : ListenerAdapter() {
     private var prefix: String
     private val commands = mapOf(
         "player" to PlayerCommand(),
-        "team" to TeamCommand()
+        "team" to TeamCommand(),
+        "help" to HelpCommand()
     )
 
     init {
@@ -43,7 +45,11 @@ class MessageHandler : ListenerAdapter() {
         var result = false
 
         if (command != null) {
-            result = command.execute(event, userMsg)
+            if (command is HelpCommand) {
+                result = command.execute(event, commands)
+            } else {
+                result = command.execute(event, userMsg)
+            }
         }
 
         log.info("Command=$cmd has result isSuccess=$result")
