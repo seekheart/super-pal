@@ -54,24 +54,34 @@ class PlayerCommand : Command() {
             return true
         }
 
+        var result = false
         when (commandArgs.removeAt(0)) {
-            "friends" -> handleFriends(event)
-            "register" -> handleRegister(event)
-            "add-team" -> handleAddTeam(event, commandArgs)
-            "delete-team" -> handleDeleteTeam(event, commandArgs)
-            "my-teams" -> handleMyTeams(event)
+            "friends" -> result = handleFriends(event)
+            "register" -> result = handleRegister(event)
+            "add-team" -> result = handleAddTeam(event, commandArgs)
+            "delete-team" -> result = handleDeleteTeam(event, commandArgs)
+            "my-teams" -> result = handleMyTeams(event)
         }
-        return true
+        return result
     }
 
-    private fun handleFriends(event: MessageReceivedEvent) {
+    private fun handleFriends(event: MessageReceivedEvent): Boolean {
         log.info("friends command recognized")
-        val players = superPalApi
-            .findPlayers()
-            .stream()
-            .map { p -> p.userName }.toList()
-            .joinToString(", ")
+        var players: String = ""
+        try {
+            players = superPalApi
+                .findPlayers()
+                .stream()
+                .map { p -> p.userName }.toList()
+                .joinToString(", ")
+        } catch (e: FeignException) {
+            log.error(e.message)
+            super.sendChannelMessage(event, "Something bad happened with finding friends! page my master!")
+            return false
+        }
+
         super.sendChannelMessage(event, "I know these Players $players")
+        return true
     }
 
     private fun handleRegister(event: MessageReceivedEvent): Boolean {
@@ -91,7 +101,7 @@ class PlayerCommand : Command() {
             } else {
                 super.sendChannelMessage(
                     event,
-                    "Something went wrong and I couldn't register you sorry ${event.author.name}!"
+                    "Something went wrong and I couldn't register you sorry ${event.author.asMention}!"
                 )
             }
             return false
