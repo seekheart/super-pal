@@ -1,6 +1,7 @@
 package com.seekheart.superpal.bot.eventHandlers
 
 import com.seekheart.superpal.bot.commands.HelpCommand
+import com.seekheart.superpal.bot.commands.LeagueCommand
 import com.seekheart.superpal.bot.commands.PlayerCommand
 import com.seekheart.superpal.bot.commands.TeamCommand
 import com.seekheart.superpal.config.BotConfig
@@ -15,7 +16,8 @@ class MessageHandler : ListenerAdapter() {
     private val commands = mapOf(
         "player" to PlayerCommand(),
         "team" to TeamCommand(),
-        "help" to HelpCommand()
+        "help" to HelpCommand(),
+        "league" to LeagueCommand()
     )
 
     init {

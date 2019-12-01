@@ -2,10 +2,14 @@ package com.seekheart.superpal.bot.commands
 
 import com.seekheart.superpal.models.bot.DiscordEmbedMessage
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import org.slf4j.LoggerFactory
 import java.awt.Color
 
 abstract class Command {
+    private val log = LoggerFactory.getLogger(Command::class.java)
     abstract val usage: MutableList<String>
     abstract fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean
 
@@ -24,4 +28,37 @@ abstract class Command {
 
         event.channel.sendMessage(embed).queue()
     }
+
+    fun assignRoleToUser(event: MessageReceivedEvent, player: Member, role: Role) {
+        event.guild.addRoleToMember(player, role).queue()
+    }
+
+
+    fun createRoleAndAssignToPlayer(event: MessageReceivedEvent, role: String, member: Member) {
+        event.guild.createRole().setName(role).queue{
+            log.info("Created role=$role")
+            assignRoleToUser(event, member, it)
+            log.info("Assigned role $role to player=${member.effectiveName}")
+        }
+    }
+
+    fun deleteRole(event: MessageReceivedEvent, role: String) {
+        val roleToDelete = findRole(event, role)!!
+        roleToDelete.delete().queue{
+            log.info("Deleted role=$role")
+        }
+    }
+
+    fun removeRoleFromPlayer(event: MessageReceivedEvent, member: Member, role: Role) {
+        event.guild.removeRoleFromMember(member, role).queue()
+    }
+
+    fun findRole(event:MessageReceivedEvent, role: String): Role? {
+        return event.guild.roles.find { it.name == role }
+    }
+
+    fun findMember(event: MessageReceivedEvent): Member? {
+        return event.guild.getMemberById(event.author.id)
+    }
+
 }

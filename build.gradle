@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    compile "net.dv8tion:JDA:4.0.0_55"
+    compile "net.dv8tion:JDA:4.0.0_68"
     implementation("com.uchuhimo:konf-core:0.20.0")
     implementation("org.slf4j:slf4j-api:1.7.29")
     implementation("ch.qos.logback:logback-classic:1.2.3")
