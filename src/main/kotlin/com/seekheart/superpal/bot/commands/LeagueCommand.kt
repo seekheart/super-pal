@@ -2,6 +2,7 @@ package com.seekheart.superpal.bot.commands
 
 import com.seekheart.superpal.api.SuperPalApi
 import com.seekheart.superpal.config.BotConfig
+import com.seekheart.superpal.models.bot.DiscordEmbedMessage
 import com.seekheart.superpal.models.web.LeagueRequest
 import com.seekheart.superpal.models.web.LeagueResponse
 import com.uchuhimo.konf.Config
@@ -14,9 +15,11 @@ import feign.slf4j.Slf4jLogger
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.LoggerFactory
 import java.util.*
+import javax.print.DocFlavor
 
 class LeagueCommand : Command() {
     override val usage = mutableListOf(
+        "league list\t-\t lists all available leagues",
         "league register\t-\tregisters a league",
         "league delete\t-\tdeletes a league",
         "League join\t-\tjoin a league"
@@ -52,6 +55,7 @@ class LeagueCommand : Command() {
 
         var result = false
         when (commandArgs.removeAt(0)) {
+            "list" -> result = handleListLeague(event)
             "register" -> result = handleRegisterLeague(event, commandArgs)
             "delete" -> result = handleDeleteLeague(event, commandArgs)
             "join" -> result = handleJoinLeague(event, commandArgs)
@@ -60,6 +64,25 @@ class LeagueCommand : Command() {
         }
 
         return result
+    }
+
+    private fun handleListLeague(event: MessageReceivedEvent): Boolean {
+        log.debug("calling api to refresh lookup")
+        val payload = superPalApi.findLeagues()
+        payload.forEach { l -> lookup[l.name] = l.id }
+
+        val leagues: List<String> = payload.map { it.name }
+        val message = leagues.joinToString("\n")
+        log.info("creating embedded message for league listing")
+        val discordMsg = DiscordEmbedMessage(
+            title = "Registered Leagues",
+            author = "Super Pal",
+            messageLabel = "Here are all the leagues that I know about",
+            message = listOf(message)
+        )
+
+        super.sendEmbedMessage(event, discordMsg)
+        return true
     }
 
     private fun handleLeaveLeague(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
@@ -73,6 +96,7 @@ class LeagueCommand : Command() {
             return false
         }
 
+        log.info("removing role=$role from member id=${member.id}")
         super.removeRoleFromPlayer(event, member, role)
         super.sendChannelMessage(event, "${event.author.asMention} has left the league $leagueName")
         return true
@@ -146,7 +170,10 @@ class LeagueCommand : Command() {
         if (!self.canInteract(leaguePlayer)) {
             log.info("Cannot interact with player=${leaguePlayer.effectiveName}")
             log.info("bot roles are ${self.roles.joinToString(", ") { it.name }}")
-            super.sendChannelMessage(event, "You are too strong ${event.author.asMention}! I can't give you roles!")
+            super.sendChannelMessage(
+                event,
+                "You are too strong ${event.author.asMention}! I can't give you roles!"
+            )
             return false
         }
 
