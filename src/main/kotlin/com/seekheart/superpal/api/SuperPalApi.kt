@@ -38,4 +38,22 @@ interface SuperPalApi {
     @RequestLine("DELETE /leagues/{id}")
     fun deleteLeague(@Param("id") leagueId: UUID)
 
+    // Raid related
+    @RequestLine("GET /raids")
+    fun findRaids(): List<RaidResponse>
+
+    @RequestLine("GET /raids/leagues/{id}")
+    fun findRaidByLeagueId(@Param("id") id: UUID): RaidResponse
+
+    @RequestLine("POST /raids")
+    fun createRaid(raid: RaidRequest): RaidResponse
+
+    @RequestLine("GET /raids/{id}")
+    fun findRaidById(@Param("id") id: UUID)
+
+    @RequestLine("PUT /raids/{id}")
+    fun updateRaid(@Param("id") id: UUID, raid: RaidRequest): RaidResponse
+
+    @RequestLine("DELETE /raids/{id}")
+    fun deleteRaid(@Param("id") raidId: UUID)
 }

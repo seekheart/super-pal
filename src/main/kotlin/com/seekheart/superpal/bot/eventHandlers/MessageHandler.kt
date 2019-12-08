@@ -1,9 +1,6 @@
 package com.seekheart.superpal.bot.eventHandlers
 
-import com.seekheart.superpal.bot.commands.HelpCommand
-import com.seekheart.superpal.bot.commands.LeagueCommand
-import com.seekheart.superpal.bot.commands.PlayerCommand
-import com.seekheart.superpal.bot.commands.TeamCommand
+import com.seekheart.superpal.bot.commands.*
 import com.seekheart.superpal.config.BotConfig
 import com.uchuhimo.konf.Config
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -17,7 +14,8 @@ class MessageHandler : ListenerAdapter() {
         "player" to PlayerCommand(),
         "team" to TeamCommand(),
         "help" to HelpCommand(),
-        "league" to LeagueCommand()
+        "league" to LeagueCommand(),
+        "raid" to RaidCommand()
     )
 
     init {

@@ -15,14 +15,13 @@ import feign.slf4j.Slf4jLogger
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.LoggerFactory
 import java.util.*
-import javax.print.DocFlavor
 
 class LeagueCommand : Command() {
     override val usage = mutableListOf(
         "league list\t-\t lists all available leagues",
-        "league register\t-\tregisters a league",
-        "league delete\t-\tdeletes a league",
-        "League join\t-\tjoin a league"
+        "league register <leagueName>\t-\tregisters a league",
+        "league delete <leagueName>\t-\tdeletes a league",
+        "League join <leagueName>\t-\tjoin a league"
     )
     private val log = LoggerFactory.getLogger(LeagueCommand::class.java)
     private var superPalApi: SuperPalApi
