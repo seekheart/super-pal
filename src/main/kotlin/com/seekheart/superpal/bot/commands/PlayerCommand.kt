@@ -20,8 +20,8 @@ class PlayerCommand : Command() {
     override val usage = mutableListOf(
         "player friends\t-\tshows list of registered players",
         "player register\t-\tregisters player/makes player card",
-        "player add-team\t-\tadds team to player card",
-        "player delete-team\t-\tremoves team from player card",
+        "player add-team <teamName>\t-\tadds team to player card",
+        "player delete-team <teamName>\t-\tremoves team from player card",
         "player my-team\t-\tshows team registered on player card"
     )
     private val log = LoggerFactory.getLogger(PlayerCommand::class.java)

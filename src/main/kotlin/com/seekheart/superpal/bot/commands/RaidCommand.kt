@@ -38,11 +38,16 @@ class RaidCommand : Command() {
             .decoder(GsonDecoder())
             .logger(Slf4jLogger(LeagueResponse::class.java))
             .target(SuperPalApi::class.java, secrets[BotConfig.apiUrl])
+        setLeagueLookup()
+    }
 
+    private fun setLeagueLookup() {
         superPalApi.findLeagues().forEach {
+            log.debug("Adding league name = ${it.name} to lookup with league id = ${it.id}")
             leagueLookup[it.name] = it.id
         }
     }
+
 
     override fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean {
         val noActionErrorMsg = "Sorry I don't know what you want to do with raids"
@@ -66,7 +71,10 @@ class RaidCommand : Command() {
     private fun handleCreateRaid(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
         val leagueName = args.removeAt(0)
         val tier = args.removeAt(0).toLong()
-        val status = args.removeAt(0) as RaidStatusOptions
+        val status = RaidStatusOptions.valueOf(args.removeAt(0))
+
+        log.info("Refreshing league lookup")
+        setLeagueLookup()
         val leagueId = leagueLookup[leagueName]
 
         if (leagueId == null) {
@@ -82,13 +90,14 @@ class RaidCommand : Command() {
         } catch (e: FeignException) {
             log.error(e.message)
             when (e.status()) {
-                409 -> super.sendChannelMessage(event, "You already have a raid going!")
+                409, 400 -> super.sendChannelMessage(event, "You already have a raid going!")
                 500 -> super.sendChannelMessage(event, "Call my master something in the shadows went wrong!")
                 else -> super.sendChannelMessage(event, "I don't know what happened call my master!")
             }
             return false
         }
         log.info("Successfully created raid! raid id=${response.id}")
+        super.sendChannelMessage(event, "${event.author.asMention} successfully created raid for league = $leagueName")
         raidLookup[leagueName] = response.id
         return true
     }
