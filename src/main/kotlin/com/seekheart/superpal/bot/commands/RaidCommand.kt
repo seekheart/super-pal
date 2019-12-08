@@ -23,7 +23,8 @@ class RaidCommand : Command() {
         "raid create <leagueName> <tier> <status>\t-\t creates a raid under player's current league",
         "raid update <leagueName> <status>\t-\t updates status of raid",
         "raid delete\t-\t deletes the raid",
-        "raid list <leagueName>\t-\t lists the current state of the raid"
+        "raid list <leagueName>\t-\t lists the current state of the raid",
+        "raid status-list\t-\t lists the available raid status states a raid can be in"
     )
     private val log = LoggerFactory.getLogger(RaidCommand::class.java)
     private var superPalApi: SuperPalApi
@@ -50,7 +51,6 @@ class RaidCommand : Command() {
     }
 
 
-
     override fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean {
         val noActionErrorMsg = "Sorry I don't know what you want to do with raids"
 
@@ -65,11 +65,72 @@ class RaidCommand : Command() {
             "create" -> result = handleCreateRaid(event, commandArgs)
             "update" -> result = handleRaidUpdate(event, commandArgs)
             "list" -> result = handleRaidList(event, commandArgs)
+            "status-list" -> result = handleRaidStatusList(event)
+            "delete" -> result = handleRaidDelete(event, commandArgs)
             else -> super.sendChannelMessage(event, "I don't know this command >.<")
         }
 
         log.info("Command complete status=$result")
         return result
+    }
+
+    private fun handleRaidDelete(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
+        val leagueName = args.removeAt(0)
+        log.info("Refreshing league lookup for raid deletion command")
+        setLookups()
+        val leagueId = leagueLookup[leagueName]
+
+        if (leagueId == null) {
+            log.error("League name=$leagueName not found!")
+            super.sendChannelMessage(event, "${event.author.asMention} I don't know about league $leagueName!")
+            return false
+        }
+
+        val raidId: UUID
+        try {
+            raidId = superPalApi.findRaidByLeagueId(leagueId).id
+        } catch (e: FeignException) {
+            log.error("Problem occurred trying to find raid by league id = $leagueId")
+            log.error(e.message)
+            when (e.status()) {
+                404 -> super.sendChannelMessage(event, "I can't find the raid for league $leagueName")
+                else -> super.sendChannelMessage(event, "Something bad happened call my master!")
+            }
+            return false
+        }
+
+        log.info("Deleting raid id=$raidId from league name=$leagueName")
+
+        try {
+            superPalApi.deleteRaid(raidId)
+        } catch (e: FeignException) {
+            log.error(e.message)
+            when (e.status()) {
+                404 -> super.sendChannelMessage(
+                    event,
+                    "${event.author.asMention} I can't delete something that's not there!"
+                )
+                else -> super.sendChannelMessage(event, "Something bad happened! Call my master!")
+            }
+            return false
+        }
+
+        log.info("Successfully deleted raid id=$raidId from league id=$leagueId")
+        super.sendChannelMessage(event, "${event.author.asMention} I has deleted the raid from your league!")
+        return true
+    }
+
+    private fun handleRaidStatusList(event: MessageReceivedEvent): Boolean {
+        val options = RaidStatusOptions.values().map { v -> v.name }
+        val discordMsg = DiscordEmbedMessage(
+            title = "Raid Status Options",
+            author = "Super Pal",
+            messageLabel = "These are the states a raid can be in",
+            message = options
+        )
+
+        super.sendEmbedMessage(event, discordMsg)
+        return true
     }
 
     private fun handleRaidList(event: MessageReceivedEvent, args: MutableList<String>): Boolean {

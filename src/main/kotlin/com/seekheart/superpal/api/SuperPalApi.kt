@@ -53,4 +53,7 @@ interface SuperPalApi {
 
     @RequestLine("PUT /raids/{id}")
     fun updateRaid(@Param("id") id: UUID, raid: RaidRequest): RaidResponse
+
+    @RequestLine("DELETE /raids/{id}")
+    fun deleteRaid(@Param("id") raidId: UUID)
 }
