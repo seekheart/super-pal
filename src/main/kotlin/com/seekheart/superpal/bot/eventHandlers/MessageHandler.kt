@@ -1,6 +1,7 @@
 package com.seekheart.superpal.bot.eventHandlers
 
-import com.seekheart.superpal.bot.commands.*
+import com.seekheart.superpal.bot.commands.HelpCommand
+import com.seekheart.superpal.bot.commands.RaidCommand
 import com.seekheart.superpal.config.BotConfig
 import com.uchuhimo.konf.Config
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -11,10 +12,7 @@ class MessageHandler : ListenerAdapter() {
     private val log = LoggerFactory.getLogger(MessageHandler::class.java)
     private var prefix: String
     private val commands = mapOf(
-        "player" to PlayerCommand(),
-        "team" to TeamCommand(),
         "help" to HelpCommand(),
-        "league" to LeagueCommand(),
         "raid" to RaidCommand()
     )
 
