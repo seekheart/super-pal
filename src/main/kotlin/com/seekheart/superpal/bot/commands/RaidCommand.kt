@@ -3,7 +3,6 @@ package com.seekheart.superpal.bot.commands
 import com.seekheart.superpal.api.SuperPalApi
 import com.seekheart.superpal.config.BotConfig
 import com.seekheart.superpal.models.bot.DiscordEmbedMessage
-import com.seekheart.superpal.models.web.LeagueResponse
 import com.seekheart.superpal.models.web.RaidRequest
 import com.seekheart.superpal.models.web.RaidResponse
 import com.seekheart.superpal.models.web.RaidStatusOptions
@@ -16,38 +15,31 @@ import feign.okhttp.OkHttpClient
 import feign.slf4j.Slf4jLogger
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.LoggerFactory
-import java.util.*
 
 class RaidCommand : Command() {
     override val usage = mutableListOf(
-        "raid create <leagueName> <tier> <status>\t-\t creates a raid under player's current league",
-        "raid update <leagueName> <status>\t-\t updates status of raid",
-        "raid delete\t-\t deletes the raid",
-        "raid list <leagueName>\t-\t lists the current state of the raid",
-        "raid status-list\t-\t lists the available raid status states a raid can be in"
+        "raid create <tier>\t-\t creates a raid under player's current league",
+        "raid info\t-\t displays the current active raid's details",
+        "raid update-status\t-\t updates the current status of the raid choose between FUNDING, IN_PROGRESS, ENDED"
+
     )
     private val log = LoggerFactory.getLogger(RaidCommand::class.java)
     private var superPalApi: SuperPalApi
     private val secrets = Config { addSpec(BotConfig) }
         .from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
-    private var leagueLookup: MutableMap<String, UUID> = emptyMap<String, UUID>().toMutableMap()
-    private var raidLookup: MutableMap<String, UUID> = emptyMap<String, UUID>().toMutableMap()
+    private var activeRaid: RaidResponse?
 
     init {
+        log.info("Initializing Raid Command")
         superPalApi = Feign.builder()
             .client(OkHttpClient())
             .encoder(GsonEncoder())
             .decoder(GsonDecoder())
-            .logger(Slf4jLogger(LeagueResponse::class.java))
+            .logger(Slf4jLogger(RaidResponse::class.java))
             .target(SuperPalApi::class.java, secrets[BotConfig.apiUrl])
-        setLookups()
-    }
 
-    private fun setLookups() {
-        superPalApi.findLeagues().forEach {
-            log.debug("Adding league name = ${it.name} to lookup with league id = ${it.id}")
-            leagueLookup[it.name] = it.id
-        }
+        log.info("Fetching raids and setting active raid context")
+        activeRaid = superPalApi.findRaids().find { it.state != RaidStatusOptions.ENDED }
     }
 
 
@@ -63,10 +55,8 @@ class RaidCommand : Command() {
         var result = false
         when (commandArgs.removeAt(0)) {
             "create" -> result = handleCreateRaid(event, commandArgs)
-            "update" -> result = handleRaidUpdate(event, commandArgs)
-            "list" -> result = handleRaidList(event, commandArgs)
-            "status-list" -> result = handleRaidStatusList(event)
-            "delete" -> result = handleRaidDelete(event, commandArgs)
+            "info" -> result = handleListRaidInfo(event)
+            "update-status" -> result = handleUpdateRaidStatus(event, commandArgs)
             else -> super.sendChannelMessage(event, "I don't know this command >.<")
         }
 
@@ -74,176 +64,106 @@ class RaidCommand : Command() {
         return result
     }
 
-    private fun handleRaidDelete(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
-        val leagueName = args.removeAt(0)
-        log.info("Refreshing league lookup for raid deletion command")
-        setLookups()
-        val leagueId = leagueLookup[leagueName]
-
-        if (leagueId == null) {
-            log.error("League name=$leagueName not found!")
-            super.sendChannelMessage(event, "${event.author.asMention} I don't know about league $leagueName!")
-            return false
+    private fun handleUpdateRaidStatus(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
+        if (activeRaid == null) {
+            log.error("No active raid present!")
+            super.sendChannelMessage(
+                event,
+                "${event.author.asMention} I can't update unless there's a raid in FUNDING or IN_PROGRESS!"
+            )
         }
+        val newStatus = RaidStatusOptions.valueOf(args.removeAt(0))
+        log.info("Updating current raid status to new status=$newStatus")
 
-        val raidId: UUID
+        val request = RaidRequest(tier = 6L, state = newStatus)
+
+        var result = true
         try {
-            raidId = superPalApi.findRaidByLeagueId(leagueId).id
-        } catch (e: FeignException) {
-            log.error("Problem occurred trying to find raid by league id = $leagueId")
-            log.error(e.message)
-            when (e.status()) {
-                404 -> super.sendChannelMessage(event, "I can't find the raid for league $leagueName")
-                else -> super.sendChannelMessage(event, "Something bad happened call my master!")
-            }
-            return false
-        }
-
-        log.info("Deleting raid id=$raidId from league name=$leagueName")
-
-        try {
-            superPalApi.deleteRaid(raidId)
+            superPalApi.updateRaid(id = activeRaid!!.id, raid = request)
         } catch (e: FeignException) {
             log.error(e.message)
-            when (e.status()) {
-                404 -> super.sendChannelMessage(
-                    event,
-                    "${event.author.asMention} I can't delete something that's not there!"
-                )
-                else -> super.sendChannelMessage(event, "Something bad happened! Call my master!")
+            super.handleStatusCodeError(event, e.status())
+            result = false
+        } finally {
+            if (!result) {
+                return false
             }
-            return false
+            log.info("Successfully performed update response!")
+            super.sendChannelMessage(
+                event,
+                "${event.author.asMention} I have updated your raid status to $newStatus"
+            )
+            return true
         }
-
-        log.info("Successfully deleted raid id=$raidId from league id=$leagueId")
-        super.sendChannelMessage(event, "${event.author.asMention} I has deleted the raid from your league!")
-        return true
     }
 
-    private fun handleRaidStatusList(event: MessageReceivedEvent): Boolean {
-        val options = RaidStatusOptions.values().map { v -> v.name }
+    private fun handleListRaidInfo(event: MessageReceivedEvent): Boolean {
+        log.info("Fetching raid info")
+        val raids = superPalApi.findRaids()
+        val activeRaid = raids.find { it.state != RaidStatusOptions.ENDED }
+
+        log.debug("activeRaid=$activeRaid")
+
+        if (activeRaid == null) {
+            log.warn("There are no active raids at this time")
+            super.sendChannelMessage(event, "${event.author.asMention} there aren't any active raids right now!")
+            return false
+        }
+
+        val maxPadding = activeRaid.bosses.map { it.name.length }.max() ?: 40
+
+        val msg = activeRaid.bosses.map {
+            val health = it.health.toString()
+            val healthSize = health.length
+            val healthDisplay = health.padEnd(healthSize)
+            val boss = it.name
+            val bossDisplay = boss.padEnd(maxPadding)
+            "`${bossDisplay} - $healthDisplay`"
+        }
+
         val discordMsg = DiscordEmbedMessage(
-            title = "Raid Status Options",
-            author = "Super Pal",
-            messageLabel = "These are the states a raid can be in",
-            message = options
+            title = "Current Raid: ${activeRaid.state}\nBoss Details",
+            messageLabel = "Boss current Healths for Raid Tier ${activeRaid.tier}",
+            message = msg
         )
 
+        log.info("Sending user details for message=$discordMsg")
         super.sendEmbedMessage(event, discordMsg)
         return true
     }
 
-    private fun handleRaidList(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
-        val leagueName = args.removeAt(0)
-        val leagueId = leagueLookup[leagueName]
-        if (leagueId == null) {
-            log.error("No league id found for league name=$leagueName")
-            super.sendChannelMessage(event, "I don't know about league $leagueName")
-            return false
-        }
-
-        val response: RaidResponse
-        try {
-            response = superPalApi.findRaidByLeagueId(leagueId)
-        } catch (e: FeignException) {
-            log.error(e.message)
-            when (e.status()) {
-                404 -> super.sendChannelMessage(event, "I don't know about league $leagueName")
-                else -> super.sendChannelMessage(event, "Call my master I don't know what happened!")
-            }
-            return false
-        }
-        log.info("Successfully got raid details for league = $leagueId")
-
-        val leagueText = "$leagueName".padEnd(17)
-        val tierText = "${response.tier}".padEnd(10)
-        val statusText = "${response.status}".padStart(11)
-
-        val info = "`${leagueText + tierText + statusText}`"
-
-        val leagueHeaderText = "League Name".padEnd(17)
-        val tierHeaderText = "Tier".padEnd(10)
-        val statusHeaderText = "Status".padStart(11)
-        val heading = "`${leagueHeaderText + tierHeaderText + statusHeaderText}`"
-
-        val discordMessage = DiscordEmbedMessage(
-            title = "Raid Details for League $leagueName",
-            author = "Super Pal",
-            messageLabel = heading,
-            message = listOf(info)
-        )
-
-        super.sendEmbedMessage(event, discordMessage)
-        return true
-    }
-
     private fun handleCreateRaid(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
-        val leagueName = args.removeAt(0)
-        val tier = args.removeAt(0).toLong()
-        val status = RaidStatusOptions.valueOf(args.removeAt(0))
-        log.info("Preparing to create a raid for league name=$leagueName")
-        log.info("Refreshing league lookup")
-        setLookups()
-        val leagueId = leagueLookup[leagueName]
+        log.info("Creating raid request for raid tier=${args[0]}")
+        val tier = args[0].toLong()
 
-        if (leagueId == null) {
-            log.error("Cannot find league id for league name=$leagueName")
+        if (args.isEmpty() || tier <= 0 || tier > 8) {
+            log.error("Error bad tier detected!")
+            super.sendChannelMessage(
+                event,
+                "${event.author.asMention} you need to tell me what tier 1-8 this raid will be!"
+            )
             return false
         }
 
-        val request = RaidRequest(leagueId = leagueId, leagueName = leagueName, tier = tier, status = status)
-
-        val response: RaidResponse?
+        val request = RaidRequest(tier = tier, state = RaidStatusOptions.FUNDING)
+        log.info("Making request=$request to api")
+        var response: RaidResponse? = null
+        var result = true
         try {
             response = superPalApi.createRaid(request)
         } catch (e: FeignException) {
             log.error(e.message)
-            when (e.status()) {
-                409, 400 -> super.sendChannelMessage(event, "You already have a raid going!")
-                500 -> super.sendChannelMessage(event, "Call my master something in the shadows went wrong!")
-                else -> super.sendChannelMessage(event, "I don't know what happened call my master!")
+            result = super.handleStatusCodeError(event, e.status())
+        } finally {
+            if (!result) {
+                return false
             }
-            return false
+            log.info("Successfully created raid response=$response")
+            activeRaid = response
+            super.sendChannelMessage(event, "${event.author.asMention} I have created your tier $tier raid!")
+            return true
         }
-        log.info("Successfully created raid! raid id=${response.id}")
-        super.sendChannelMessage(event, "${event.author.asMention} successfully created raid for league = $leagueName")
-        raidLookup[leagueName] = response.id
-        return true
     }
 
-    private fun handleRaidUpdate(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
-        val leagueName = args.removeAt(0)
-        log.info("Preparing to update a raid for league=$leagueName")
-        log.info("Refreshing league lookup")
-        setLookups()
-        val leagueId = leagueLookup[leagueName]
-        if (leagueId == null) {
-            log.error("Could not find league name = $leagueName")
-            super.sendChannelMessage(event, "I don't know about league = $leagueName")
-            return false
-        }
-        val status = RaidStatusOptions.valueOf(args.removeAt(0))
 
-        log.info("Fetching current raid state for leagueId=$leagueId")
-        val raid = superPalApi.findRaidByLeagueId(leagueId)
-
-        val request = RaidRequest(leagueId = leagueId, leagueName = leagueName, tier = raid.tier, status = status)
-
-        val response: RaidResponse
-
-        try {
-            response = superPalApi.updateRaid(raid.id, request)
-        } catch (e: FeignException) {
-            log.error(e.message)
-            when (e.status()) {
-                400, 404 -> super.sendChannelMessage(event, "You can't update a raid for some reason")
-                500 -> super.sendChannelMessage(event, "Contact my master something went wrong")
-                else -> super.sendChannelMessage(event, "Oops something went wrong call my master!")
-            }
-            return false
-        }
-        log.info("Successfully updated raid id=${response.id} to status = ${response.status}")
-        super.sendChannelMessage(event, "${event.author.asMention} I has updated your league's raid status to $status!")
-        return true
-    }
 }

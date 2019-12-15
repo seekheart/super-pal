@@ -53,12 +53,23 @@ abstract class Command {
         event.guild.removeRoleFromMember(member, role).queue()
     }
 
-    fun findRole(event:MessageReceivedEvent, role: String): Role? {
+    fun findRole(event: MessageReceivedEvent, role: String): Role? {
         return event.guild.roles.find { it.name == role }
     }
 
     fun findMember(event: MessageReceivedEvent): Member? {
         return event.guild.getMemberById(event.author.id)
+    }
+
+    fun handleStatusCodeError(event: MessageReceivedEvent, statusCode: Int): Boolean {
+        val mentionedUser = event.author.asMention
+        when (statusCode) {
+            400 -> sendChannelMessage(event, "$mentionedUser you made a bad request!")
+            500 -> sendChannelMessage(event, "$mentionedUser my server is messed up! Call my master!")
+            else -> sendChannelMessage(event, "$mentionedUser call my master! Something bad happened!")
+        }
+
+        return false
     }
 
 }
