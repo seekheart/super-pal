@@ -113,12 +113,12 @@ class RaidCommand : Command() {
         val maxPadding = activeRaid.bosses.map { it.name.length }.max() ?: 40
 
         val msg = activeRaid.bosses.map {
-            val health = it.health.toString()
+            val health = "%,d".format(it.health)
             val healthSize = health.length
             val healthDisplay = health.padEnd(healthSize)
             val boss = it.name
             val bossDisplay = boss.padEnd(maxPadding)
-            "`${bossDisplay} - $healthDisplay`"
+            "`${bossDisplay} - ${healthDisplay}`"
         }
 
         val discordMsg = DiscordEmbedMessage(

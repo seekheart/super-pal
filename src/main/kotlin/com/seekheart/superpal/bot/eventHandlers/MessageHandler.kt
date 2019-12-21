@@ -1,5 +1,6 @@
 package com.seekheart.superpal.bot.eventHandlers
 
+import com.seekheart.superpal.bot.commands.BossCommand
 import com.seekheart.superpal.bot.commands.HelpCommand
 import com.seekheart.superpal.bot.commands.RaidCommand
 import com.seekheart.superpal.config.BotConfig
@@ -13,7 +14,8 @@ class MessageHandler : ListenerAdapter() {
     private var prefix: String
     private val commands = mapOf(
         "help" to HelpCommand(),
-        "raid" to RaidCommand()
+        "raid" to RaidCommand(),
+        "boss" to BossCommand()
     )
 
     init {
