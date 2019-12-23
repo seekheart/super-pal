@@ -61,6 +61,7 @@ class BossCommand : Command() {
                 activeRaidBosses[it.bossName.toLowerCase()] = it.id
             }
         }
+        log.info("Finished setting boss lookup=$activeRaidBosses")
     }
 
     override fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean {
@@ -90,7 +91,7 @@ class BossCommand : Command() {
         log.debug("damage=$damage")
         var bossName = commandArgs.joinToString(" ").toLowerCase()
 
-        if (bossName.isNotEmpty() && bossName.length <= 2) {
+        if (bossName.isNotEmpty() && bossAbbreviations.containsKey(bossName)) {
             log.info("Abbreviation detected, fetching abbreviation for boss name=$bossName")
             bossName = bossAbbreviations[bossName].toString()
             log.info("Resolved boss name=$bossName")
