@@ -27,6 +27,16 @@ class BossCommand : Command() {
     private val secrets = Config { addSpec(BotConfig) }
         .from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
     private var activeRaidBosses: MutableMap<String, UUID> = emptyMap<String, UUID>().toMutableMap()
+    private val bossAbbreviations: Map<String, String> = mapOf(
+        "gg" to "telekinetic gorilla grodd",
+        "cc" to "captain cold",
+        "hsc" to "horrific scarecrow",
+        "df" to "doctor fate",
+        "p1" to "brainiac phase 1",
+        "p2" to "brainiac phase 2",
+        "p3" to "brainiac phase 3",
+        "p4" to "brainiac phase 4"
+    )
 
     init {
         log.info("Initializing Boss Command")
@@ -51,6 +61,7 @@ class BossCommand : Command() {
                 activeRaidBosses[it.bossName.toLowerCase()] = it.id
             }
         }
+        log.info("Finished setting boss lookup=$activeRaidBosses")
     }
 
     override fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean {
@@ -78,7 +89,13 @@ class BossCommand : Command() {
         setBossLookup()
         val damage = parseDamageInput(commandArgs.removeAt(commandArgs.size - 1))
         log.debug("damage=$damage")
-        val bossName = commandArgs.joinToString(" ")
+        var bossName = commandArgs.joinToString(" ").toLowerCase()
+
+        if (bossName.isNotEmpty() && bossAbbreviations.containsKey(bossName)) {
+            log.info("Abbreviation detected, fetching abbreviation for boss name=$bossName")
+            bossName = bossAbbreviations[bossName].toString()
+            log.info("Resolved boss name=$bossName")
+        }
 
         val bossId = activeRaidBosses[bossName]
 
