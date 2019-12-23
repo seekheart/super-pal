@@ -2,13 +2,14 @@ package com.seekheart.superpal.bot.commands
 
 import com.seekheart.superpal.api.SuperPalApi
 import com.seekheart.superpal.config.BotConfig
+import com.seekheart.superpal.config.FeignConfig
 import com.seekheart.superpal.models.bot.DiscordEmbedMessage
 import com.seekheart.superpal.models.web.BossRequest
 import com.seekheart.superpal.models.web.RaidResponse
 import com.seekheart.superpal.models.web.RaidStatusOptions
-import com.uchuhimo.konf.Config
 import feign.Feign
 import feign.FeignException
+import feign.auth.BasicAuthRequestInterceptor
 import feign.gson.GsonDecoder
 import feign.gson.GsonEncoder
 import feign.okhttp.OkHttpClient
@@ -24,8 +25,6 @@ class BossCommand : Command() {
         "boss list-shortcuts\t-\t list the shortcuts for reporting damage numbers"
     )
     private var superPalApi: SuperPalApi
-    private val secrets = Config { addSpec(BotConfig) }
-        .from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
     private var activeRaidBosses: MutableMap<String, UUID> = emptyMap<String, UUID>().toMutableMap()
     private val bossAbbreviations: Map<String, String> = mapOf(
         "gg" to "telekinetic gorilla grodd",
@@ -44,6 +43,9 @@ class BossCommand : Command() {
             .client(OkHttpClient())
             .encoder(GsonEncoder())
             .decoder(GsonDecoder())
+            .requestInterceptor(
+                BasicAuthRequestInterceptor(feignAuthSecret[FeignConfig.user], feignAuthSecret[FeignConfig.password])
+            )
             .logger(Slf4jLogger(RaidResponse::class.java))
             .target(SuperPalApi::class.java, secrets[BotConfig.apiUrl])
         setBossLookup()
@@ -140,23 +142,23 @@ class BossCommand : Command() {
         return true
     }
 
-    private fun parseDamageInput(dmg: String): Long {
+    private fun parseDamageInput(dmg: String): Int {
         val suffix = dmg[dmg.length - 1].toString().toUpperCase()
         val damage = dmg.dropLast(1)
-        val finalDmg: Long
+        val finalDmg: Int
         finalDmg = when (suffix) {
             "M" -> {
                 log.info("Found M suffix multiplying $damage by 1,000,000")
-                (damage.toFloat() * 1000000).toLong()
+                (damage.toFloat() * 1000000).toInt()
             }
             "K" -> {
                 dmg.dropLast(0)
                 log.info("Found K suffix multiplying $dmg.dropLast(0) by 1000")
-                (damage.toFloat() * 1000).toLong()
+                (damage.toFloat() * 1000).toInt()
             }
             else -> {
                 log.info("No suffix found")
-                damage.toLong() * 10
+                damage.toInt() * 10
             }
         }
         log.info("Final damage-$finalDmg")

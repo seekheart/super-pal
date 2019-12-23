@@ -2,13 +2,14 @@ package com.seekheart.superpal.bot.commands
 
 import com.seekheart.superpal.api.SuperPalApi
 import com.seekheart.superpal.config.BotConfig
+import com.seekheart.superpal.config.FeignConfig
 import com.seekheart.superpal.models.bot.DiscordEmbedMessage
 import com.seekheart.superpal.models.web.RaidRequest
 import com.seekheart.superpal.models.web.RaidResponse
 import com.seekheart.superpal.models.web.RaidStatusOptions
-import com.uchuhimo.konf.Config
 import feign.Feign
 import feign.FeignException
+import feign.auth.BasicAuthRequestInterceptor
 import feign.gson.GsonDecoder
 import feign.gson.GsonEncoder
 import feign.okhttp.OkHttpClient
@@ -25,8 +26,6 @@ class RaidCommand : Command() {
     )
     private val log = LoggerFactory.getLogger(RaidCommand::class.java)
     private var superPalApi: SuperPalApi
-    private val secrets = Config { addSpec(BotConfig) }
-        .from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
     private var activeRaid: RaidResponse?
 
     init {
@@ -35,6 +34,9 @@ class RaidCommand : Command() {
             .client(OkHttpClient())
             .encoder(GsonEncoder())
             .decoder(GsonDecoder())
+            .requestInterceptor(
+                BasicAuthRequestInterceptor(feignAuthSecret[FeignConfig.user], feignAuthSecret[FeignConfig.password])
+            )
             .logger(Slf4jLogger(RaidResponse::class.java))
             .target(SuperPalApi::class.java, secrets[BotConfig.apiUrl])
 
@@ -72,10 +74,10 @@ class RaidCommand : Command() {
                 "${event.author.asMention} I can't update unless there's a raid in FUNDING or IN_PROGRESS!"
             )
         }
-        val newStatus = RaidStatusOptions.valueOf(args.removeAt(0))
+        val newStatus = RaidStatusOptions.valueOf(args.removeAt(0).toUpperCase())
         log.info("Updating current raid status to new status=$newStatus")
 
-        val request = RaidRequest(tier = 6L, state = newStatus)
+        val request = RaidRequest(tier = 6, state = newStatus)
 
         var result = true
         try {
@@ -134,7 +136,7 @@ class RaidCommand : Command() {
 
     private fun handleCreateRaid(event: MessageReceivedEvent, args: MutableList<String>): Boolean {
         log.info("Creating raid request for raid tier=${args[0]}")
-        val tier = args[0].toLong()
+        val tier = args[0].toInt()
 
         if (args.isEmpty() || tier <= 0 || tier > 8) {
             log.error("Error bad tier detected!")
