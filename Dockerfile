@@ -13,5 +13,4 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*jar /app/app.jar
-COPY --from=build /app/build/resources /app/resources
 ENTRYPOINT ["java", "-jar", "app.jar"]

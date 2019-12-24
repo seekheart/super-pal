@@ -1,6 +1,8 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.3.50'
+    id("com.github.johnrengelman.shadow").version("4.0.4")
+
 }
 
 group 'com.seekheart'
@@ -16,7 +18,7 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation( "net.dv8tion:JDA:4.0.0_68")
-    compile("com.uchuhimo:konf-core:0.20.0")
+    implementation("com.uchuhimo:konf-core:0.20.0")
     compile("org.slf4j:slf4j-api:1.7.29")
     compile("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.github.openfeign:feign-okhttp:10.6.0")

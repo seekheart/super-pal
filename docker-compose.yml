@@ -2,3 +2,10 @@ version: "3.7"
 services:
   super-pal:
     build: .
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL}
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_COMMANDPREFIX: ${BOT_COMMANDPREFIX}
+      BOT_APIURL: ${BOT_APIURL}
+      FEIGN_USER: ${FEIGN_USER}
+      FEIGN_PASSWORD: ${FEIGN_PASSWORD}
