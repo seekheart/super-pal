@@ -6,7 +6,7 @@ plugins {
 group 'com.seekheart'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
@@ -15,10 +15,10 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    compile "net.dv8tion:JDA:4.0.0_68"
-    implementation("com.uchuhimo:konf-core:0.20.0")
-    implementation("org.slf4j:slf4j-api:1.7.29")
-    implementation("ch.qos.logback:logback-classic:1.2.3")
+    implementation( "net.dv8tion:JDA:4.0.0_68")
+    compile("com.uchuhimo:konf-core:0.20.0")
+    compile("org.slf4j:slf4j-api:1.7.29")
+    compile("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.github.openfeign:feign-okhttp:10.6.0")
     implementation("io.github.openfeign:feign-gson:10.6.0")
     implementation("io.github.openfeign:feign-slf4j:10.6.0")
@@ -26,8 +26,17 @@ dependencies {
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = sourceCompatibility
 }
 compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = sourceCompatibility
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.seekheart.superpal.MainKt'
+        )
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
