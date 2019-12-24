@@ -1,11 +1,28 @@
 version: "3.7"
 services:
+  super-pal-api:
+    image: seekheart/super-pal-api
+    ports:
+      - "8080:8080"
+    links:
+      - db
+    env_file:
+      - .env
+    depends_on:
+      - db
+  db:
+    image: postgres:12-alpine
+    env_file:
+      - .env
+    ports:
+      - 5432:5432
+    volumes:
+      - /data/super_pal:/var/lib/postgresql/data
   super-pal:
     build: .
-    environment:
-      LOG_LEVEL: ${LOG_LEVEL}
-      BOT_TOKEN: ${BOT_TOKEN}
-      BOT_COMMANDPREFIX: ${BOT_COMMANDPREFIX}
-      BOT_APIURL: ${BOT_APIURL}
-      FEIGN_USER: ${FEIGN_USER}
-      FEIGN_PASSWORD: ${FEIGN_PASSWORD}
+    env_file:
+      - .env
+    links:
+      - super-pal-api
+    depends_on:
+      - super-pal-api
