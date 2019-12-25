@@ -1,6 +1,9 @@
 package com.seekheart.superpal.bot.commands
 
+import com.seekheart.superpal.config.BotConfig
+import com.seekheart.superpal.config.FeignConfig
 import com.seekheart.superpal.models.bot.DiscordEmbedMessage
+import com.seekheart.superpal.util.getConfig
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
@@ -10,6 +13,8 @@ import java.awt.Color
 
 abstract class Command {
     private val log = LoggerFactory.getLogger(Command::class.java)
+    protected val secrets = getConfig(BotConfig)
+    protected val feignAuthSecret = getConfig(FeignConfig)
     abstract val usage: MutableList<String>
     abstract fun execute(event: MessageReceivedEvent, commandArgs: MutableList<String>): Boolean
 

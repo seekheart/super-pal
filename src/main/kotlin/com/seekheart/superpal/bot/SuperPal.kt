@@ -2,6 +2,7 @@ package com.seekheart.superpal.bot
 
 import com.seekheart.superpal.bot.eventHandlers.MessageHandler
 import com.seekheart.superpal.config.BotConfig
+import com.seekheart.superpal.util.getConfig
 import com.uchuhimo.konf.Config
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
@@ -13,9 +14,8 @@ class SuperPal {
 
     init {
         log.info("loading config for bot...")
-        val config: Config = Config {
-            addSpec(BotConfig)
-        }.from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
+
+        val config: Config = getConfig(BotConfig)
 
         log.info("successfully loaded bot config!")
 

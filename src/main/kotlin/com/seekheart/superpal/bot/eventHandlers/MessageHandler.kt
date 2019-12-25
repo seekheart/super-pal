@@ -4,6 +4,7 @@ import com.seekheart.superpal.bot.commands.BossCommand
 import com.seekheart.superpal.bot.commands.HelpCommand
 import com.seekheart.superpal.bot.commands.RaidCommand
 import com.seekheart.superpal.config.BotConfig
+import com.seekheart.superpal.util.getConfig
 import com.uchuhimo.konf.Config
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -19,9 +20,7 @@ class MessageHandler : ListenerAdapter() {
     )
 
     init {
-        val config: Config = Config {
-            addSpec(BotConfig)
-        }.from.json.file(this::class.java.classLoader.getResource("secrets.json")?.file!!)
+        val config: Config = getConfig(BotConfig)
 
         this.prefix = config[BotConfig.commandPrefix]
 
